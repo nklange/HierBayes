@@ -22,6 +22,14 @@ options(mc.cores = parallel::detectCores())
 
 source("Preprocessing_data.R")
 
+# highest posterior density interval, is this the best function to do this?
+getCredI <- function(x, interval = 0.95) {
+  ci <- coda::HPDinterval(coda::as.mcmc(as.vector(x)), prob = interval)
+  c(mean = mean(x), lower = ci[1], upper = ci[2])
+}
+
+
+# Unequal Variance ----------------------------------------------
 # Parameters and inits
 
 parameters <- c("theta_signalitems", "theta_noiseitems",
@@ -76,31 +84,101 @@ rstan::traceplot(fit_uvsdt_participant, pars = c("Omega_subj", "sigma_alpha_subj
 rstan::traceplot(fit_uvsdt_participant, pars = c("alpha_subj", "lp__"))
 
 
-
-
-# Bit more involved results
-# highest posterior density interval
-getCredI <- function(x, interval = 0.95) {
-  ci <- coda::HPDinterval(coda::as.mcmc(as.vector(x)), prob = interval)
-  c(mean = mean(x), lower = ci[1], upper = ci[2])
-}
-
-
-  
 someResults <- function(Model){
   post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
-                                                       "alpha_subj","Omega_subj",
-                                                       "mu_crits","sigma_crits",
-                                                       "crit"))
+                                         "alpha_subj","Omega_subj",
+                                         "mu_crits","sigma_crits",
+                                         "crit"))
   mu_diff <- post$grand_mu[,1] - post$grand_mu[,2]
   poolsigma<- sqrt( ( post$grand_sigma[,1]^2 + post$grand_sigma[,2]^2)/2)
   dsuba <- getCredI(mu_diff/poolsigma)
   sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
   cbias <- getCredI(sdtbias)
   participant_effects <- apply(post$alpha_subj,2,getCredI)
-
+  
   return(list(dsuba,cbias,participant_effects))
 }
 
 
 someResults(fit_uvsdt_participant)
+
+
+# Equal Variance -----------------------------------------------------
+
+# Parameters and inits
+
+parameters <- c("theta_signalitems", "theta_noiseitems",
+                "grand_mu", "grand_sigma",
+                "dprime","bias",
+                "crit", "mu_crits", "sigma_crits",
+                "Omega_subj", "sigma_alpha_subj","alpha_subj",
+                "lp__")
+
+initsplease <- function(numberPara = 3) {
+  list(
+    grand_mu=sort(rnorm(2, 0.5), decreasing = TRUE),  
+    grand_sigma = runif(1, 1, 2),
+    mu_crits = sort(rnorm(3)), sigma_crits = runif(2),
+    crit_subj = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
+    Lower_Omega_subj=diag(numberPara ), 
+    sigma_alpha_subj = runif(numberPara ), 
+    alpha_t_subj=matrix(rnorm(numberParticipants * numberPara , 0, 0.1), 
+                        numberPara , numberParticipants)
+  )
+}
+
+#Data:
+## cidrs18Item_info
+## cidrs18Context_info
+
+fit_evsdt_participant <- stan(file = "Univariate/EVSDT_participant.stan",   
+                              data=cidrs18Context_info, 
+                              init=initsplease,
+                              pars=parameters,
+                              iter=4000, 
+                              chains=6, 
+                              thin=3,
+                              warmup = 1000
+)
+
+save(fit_evsdt_participant, file = "cidrs18Context_evsdt_participant.Rda", compress = "xz")
+
+
+# Quick results
+print(fit_evsdt_participant, pars = c("dprime","bias"))
+print(fit_evsdt_participant, pars = c("grand_mu", "grand_sigma", "lp__"), include = TRUE)
+
+# MCMC diagnostics
+summary(fit_evsdt_participant)$summary[,"Rhat"]
+
+stan_ac(fit_evsdt_participant, pars = c("grand_mu", "grand_sigma", "lp__"))
+stan_ac(fit_evsdt_participant, pars = c("Omega_subj","sigma_alpha_subj", "alpha_subj"))
+
+rstan::traceplot(fit_evsdt_participant, pars = c("grand_mu", "grand_sigma", "lp__"))
+rstan::traceplot(fit_evsdt_participant, pars = c("Omega_subj", "sigma_alpha_subj","lp__"))
+rstan::traceplot(fit_evsdt_participant, pars = c("alpha_subj", "lp__"))
+
+
+
+
+
+# Bit more involved results 
+
+someResults <- function(Model){
+  post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
+                                         "alpha_subj","Omega_subj",
+                                         "mu_crits","sigma_crits",
+                                         "crit"))
+  mu_diff <- post$grand_mu[,1] - post$grand_mu[,2]
+  poolsigma<- sqrt(post$grand_sigma^2)
+  dsuba <- getCredI(mu_diff/poolsigma)
+  sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
+  cbias <- getCredI(sdtbias)
+  participant_effects <- apply(post$alpha_subj,2,getCredI)
+  
+  return(list(dsuba,cbias,participant_effects))
+}
+
+
+someResults(fit_evsdt_participant)
+
