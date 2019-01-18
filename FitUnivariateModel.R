@@ -44,10 +44,12 @@ initsplease <- function(numberPara = 4) {
   )
 }
 
-
+#Data:
+## cidrs18Item_info
+## cidrs18Context_info
 
 fit_uvsdt_participant <- stan(file = "Univariate/UVSDT_participant.stan",   
-                              data=cidrs18Item_info, 
+                              data=cidrs18Context_info, 
                               init=initsplease,
                               pars=parameters,
                               iter=4000, 
@@ -55,6 +57,8 @@ fit_uvsdt_participant <- stan(file = "Univariate/UVSDT_participant.stan",
                               thin=3,
                               warmup = 1000
 )
+
+save(fit_uvsdt_participant, file = "cidrs18Context_uvsdt_participant.Rda", compress = "xz")
 
 
 # Quick results
@@ -72,7 +76,7 @@ rstan::traceplot(fit_uvsdt_participant, pars = c("Omega_subj", "sigma_alpha_subj
 rstan::traceplot(fit_uvsdt_participant, pars = c("alpha_subj", "lp__"))
 
 
-save(fit_uvsdt_participant, fit_uvsdt_participant, file = "fit_uvsdt_participant.Rda", compress = "xz")
+
 
 # Bit more involved results
 # highest posterior density interval

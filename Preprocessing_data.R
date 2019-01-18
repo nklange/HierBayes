@@ -18,7 +18,7 @@ init(c("plyr","reshape2","car"))
 # Import files -----------------------------------------------------------------
 
 
-cidrs18 <- read.csv("Univariate/cidrs18_fulldatascreened.csv",header=TRUE)
+cidrs18 <- read.csv("cidrs18_fulldatascreened.csv",header=TRUE)
 head(cidrs18)
 
 cidrs18 <- cidrs18[cidrs18$ExclReason=="valid",]
@@ -35,3 +35,13 @@ cidrs18Item_info <- list(
 )
 
 numberParticipants <- length(unique(cidrs18Item$SubjID))
+
+cidrs18Context<-cidrs18binnedfreq2[cidrs18binnedfreq2$Condition==2,]
+
+cidrs18Context_info <- list(
+  numberParticipants = length(unique(cidrs18Context$SubjID)),
+  testData_signalitems = as.matrix(cidrs18Context[cidrs18Context$StimType=="1",as.character(1:6)]),
+  testData_noiseitems = as.matrix(cidrs18Context[cidrs18Context$StimType=="2",as.character(1:6)])
+)
+
+numberParticipants <- length(unique(cidrs18Context$SubjID))
