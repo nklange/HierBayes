@@ -12,9 +12,9 @@ Univariate Signal/Noise UV SDT with participant effects, mostly cauchy priors
 
 Equal variance version of above, assuming 1 participant specific sigma for signal and noise items
 
-### [EVSDT_participant](Univariate/DP_EVSDT_Source2R_participant.stan)
+### [DP_EVSDT_Source2R_participant](Univariate/DP_EVSDT_Source2R_participant.stan)
 
-Specific version of Yonelinas dual-process model -> for source memory, recollection for signal and noise items (Source A v Source B), and Rs and Rn estimated separately for signal and noise items (written for unitization literature exploration, Diana et al, 2008))
+Specific version of Yonelinas dual-process model -> for source memory, recollection for signal and noise items (Source A v Source B), and Rs and Rn estimated separately for signal and noise items (written for unitization literature exploration, Diana et al, 2008)), participant effects
 
 ## To Do:
 
