@@ -32,8 +32,9 @@ transformed data {
 parameters {
   // Initialize parameter space for hierarchical model, top-down
   // base choice: anchor SDT model by criteria and allow mu_s and mu_n to vary
-  // alternative: fix mu_n = 0 as typical, allow criteria to vary but then define criteria relative to mu_n 
+  // alternative: fix mu_n = 0, sigma_n = 1 as typical, allow criteria to vary but then define criteria relative to mu_n 
   // alternative: fix mu_n = 0, https://osf.io/v3b76/ only estimate spread and shift of criteria
+  
   
   //Prep hyperparameters
   real grand_mu[2]; //-> for mu_s, mu_n
@@ -52,8 +53,8 @@ parameters {
   ordered[3] mu_crits; //-> for participant-specific mu_crits for crit = 2,3,4, crit1 = 0, crit5 = 1
   real<lower=0> sigma_crits[2]; // -> for participant-specific sigma_crits for crit2, crit4 with crit3 reasonably unvariable
   
-  // Prep mid-criteria for each participant, crit = 2,3,4
-  ordered[3] crit_subj[numberParticipants];
+  // Prep mid-criteria on unit scale, crit = 2,3,4
+  ordered[3] crit_un[numberParticipants];
 
 } 
 
@@ -73,11 +74,13 @@ transformed parameters {
 
   
   for (j in 1:numberParticipants) {
-    // add individual displacement to group level parameters:
-    crit[j, 1] = Phi(crit_subj[j,1]);
-    crit[j, 2] = Phi(crit_subj[j,2]);
-    crit[j, 3] = Phi(crit_subj[j,3]);
+    
+    //Transform unit scale criteria
+    crit[j, 1] = Phi(crit_un[j,1]);
+    crit[j, 2] = Phi(crit_un[j,2]);
+    crit[j, 3] = Phi(crit_un[j,3]);
 
+    // add individual displacement to group level parameters:
     theta_signalitems[j] = predictData(
         grand_mu[1] + alpha_subj[j,1], 
         exp(log(grand_sigma[1]) + alpha_subj[j,2]), 
@@ -108,9 +111,9 @@ model {
   sigma_crits ~ cauchy(0, 4); //(2,4)
 
   for (m in 1:3) { //crit2,3,4, crit1 = 0, crit5 = 1
-    if (m < 2) crit_subj[,m] ~ normal(mu_crits[m], sigma_crits[m]);
-    if (m == 2) crit_subj[,m] ~ normal(mu_crits[m], 0.1); 
-    if (m > 2) crit_subj[,m] ~ normal(mu_crits[m], sigma_crits[m-1]);
+    if (m < 2) crit_un[,m] ~ normal(mu_crits[m], sigma_crits[m]);
+    if (m == 2) crit_un[,m] ~ normal(mu_crits[m], 0.1); 
+    if (m > 2) crit_un[,m] ~ normal(mu_crits[m], sigma_crits[m-1]);
   }
  
   

@@ -1,17 +1,30 @@
-//EVSDT model for Signal/Noise SDT for 6pt rating scale with participant-random-effects
+//DP (EVSDT) model (Yonelinas) for Signal/Noise SDT for 6pt rating scale with participant-random-effects
+//Source Memory with 2 recollection parameters (Diana et al., unitization implementation)
 //Combination of Trippas et al. (2018), Selker et al. (preprint), Pratte & Rouder (2011)
 //no item effects
 //criteria anchoring scale so eqvar as sigma_s = sigma_n
 
 functions {
-  vector predictData(real mu, real sigma, vector cr) {
+  
+  vector predictData_noise(real R, real mu, real sigma, vector cr) {
     vector[6] theta;
-    theta[1] = normal_cdf(0, mu, sigma);
-    theta[2] = normal_cdf(cr[1], mu, sigma) - normal_cdf(0, mu, sigma);
-    theta[3] = normal_cdf(cr[2], mu, sigma) - normal_cdf(cr[1], mu, sigma);
-    theta[4] = normal_cdf(cr[3], mu, sigma) - normal_cdf(cr[2], mu, sigma);
-    theta[5] = normal_cdf(1, mu, sigma) - normal_cdf(cr[3], mu, sigma);
-    theta[6] = 1 - normal_cdf(1, mu, sigma);
+    theta[1] = R + (1-R)*normal_cdf(0, mu, sigma);
+    theta[2] = (1-R)*(normal_cdf(cr[1], mu, sigma) - normal_cdf(0, mu, sigma));
+    theta[3] = (1-R)*(normal_cdf(cr[2], mu, sigma) - normal_cdf(cr[1], mu, sigma));
+    theta[4] = (1-R)*(normal_cdf(cr[3], mu, sigma) - normal_cdf(cr[2], mu, sigma));
+    theta[5] = (1-R)*(normal_cdf(1, mu, sigma) - normal_cdf(cr[3], mu, sigma));
+    theta[6] = (1-R)*(1 - normal_cdf(1, mu, sigma));
+    return theta;
+  }
+  
+  vector predictData_signal(real R,real mu, real sigma, vector cr) {
+    vector[6] theta;
+    theta[1] = (1-R)*normal_cdf(0, mu, sigma);
+    theta[2] = (1-R)*(normal_cdf(cr[1], mu, sigma) - normal_cdf(0, mu, sigma));
+    theta[3] = (1-R)*(normal_cdf(cr[2], mu, sigma) - normal_cdf(cr[1], mu, sigma));
+    theta[4] = (1-R)*(normal_cdf(cr[3], mu, sigma) - normal_cdf(cr[2], mu, sigma));
+    theta[5] = (1-R)*(normal_cdf(1, mu, sigma) - normal_cdf(cr[3], mu, sigma));
+    theta[6] = R + (1-R)*(1 - normal_cdf(1, mu, sigma));
     return theta;
   }
 }
@@ -26,7 +39,7 @@ data {
 transformed data {
   int<lower=1> k;
   int<lower=1> numberParameters;
-  numberParameters = 3; //key parameters (mu_s,sigma,mu_n,sigma); excludes criteria
+  numberParameters = 5; //key parameters (mu_s,sigma,mu_n,sigma); excludes criteria
   k = 6; //rating bins
 }
 
@@ -39,6 +52,7 @@ parameters {
   //Prep hyperparameters
   real grand_mu[2]; //-> for mu_s, mu_n
   real<lower=0> grand_sigma; // -> for sigma_s and sigma_n
+  real<lower=0,upper=1> grand_R[2]; //-> for Rs, Rn
   
   // Assumption: no parent distribution for criteria
   // Participant effects: as variance-covariance matrix across parameters
@@ -79,13 +93,13 @@ transformed parameters {
     crit[j, 2] = Phi(crit_un[j,2]);
     crit[j, 3] = Phi(crit_un[j,3]);
 
-    theta_signalitems[j] = predictData(
+    theta_signalitems[j] = predictData_signal(Phi(grand_R[1] + alpha_subj[j,4]),
         grand_mu[1] + alpha_subj[j,1],
         exp(log(grand_sigma) + alpha_subj[j,2]), 
         crit[j]
     );
 
-    theta_noiseitems[j] = predictData(
+    theta_noiseitems[j] = predictData_noise(Phi(grand_R[2] + alpha_subj[j,5]),
         grand_mu[2] + alpha_subj[j,3],
         exp(log(grand_sigma) + alpha_subj[j,2]), 
         crit[j]
@@ -98,6 +112,7 @@ model {
   // grand mu and sigma
   to_vector(grand_mu) ~ cauchy(0.5, 4); 
   grand_sigma ~  cauchy(1, 10);
+  to_vector(grand_R) ~ cauchy(0.5, 4);
   
   // participant effects
   Lower_Omega_subj ~ lkj_corr_cholesky(1); 
@@ -124,7 +139,7 @@ model {
 
 generated quantities {
   corr_matrix[numberParameters] Omega_subj;
-  real dprime;
+  real familiarity;
   real bias;
   // ^ if these are init'ed lower down, they throw parsing errors
   
@@ -132,8 +147,8 @@ generated quantities {
   Omega_subj = multiply_lower_tri_self_transpose(Lower_Omega_subj);
   
   // generic output
-  dprime = (grand_mu[1] - grand_mu[2])/grand_sigma;
-  bias = (grand_mu[1] + grand_mu[2])/2;
+  familiarity = (grand_mu[1] - grand_mu[2])/grand_sigma;
+
   
 
 }

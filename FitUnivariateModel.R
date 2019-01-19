@@ -182,3 +182,82 @@ someResults <- function(Model){
 
 someResults(fit_evsdt_participant)
 
+
+
+# DP Equal Variance -----------------------------------------------------
+
+# Parameters and inits
+
+parameters <- c("theta_signalitems", "theta_noiseitems",
+                "grand_mu", "grand_sigma","grand_R",
+                "familiarity",
+                "crit", "mu_crits", "sigma_crits",
+                "Omega_subj", "sigma_alpha_subj","alpha_subj",
+                "lp__")
+
+initsplease <- function(numberPara = 5) {
+  list(
+    grand_mu=sort(rnorm(2, 0.5), decreasing = TRUE),  
+    grand_sigma = runif(1, 1, 2),
+    grand_R = runif(2, 0, 1),
+    mu_crits = sort(rnorm(3)), sigma_crits = runif(2),
+    crit_subj = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
+    Lower_Omega_subj=diag(numberPara ), 
+    sigma_alpha_subj = runif(numberPara ), 
+    alpha_t_subj=matrix(rnorm(numberParticipants * numberPara , 0, 0.1), 
+                        numberPara , numberParticipants)
+  )
+}
+
+#Data:
+## cidrs18Item_info
+## cidrs18Context_info
+
+fit_dpsource2R_participant <- stan(file = "Univariate/DP_EVSDT_Source2R_participant.stan",   
+                              data=cidrs18ContextS_info, 
+                              init=initsplease,
+                              pars=parameters,
+                              iter=4000, 
+                              chains=6, 
+                              thin=3,
+                              warmup = 1000
+)
+
+save(fit_dpsource2R_participant, file = "cidrs18Context_fit_dpsource2R_participant_participant.Rda", compress = "xz")
+
+
+# Quick results
+print(fit_dpsource2R_participant, pars = c("familiarity"))
+print(fit_dpsource2R_participant, pars = c("grand_mu", "grand_sigma","grand_R", "lp__"), include = TRUE)
+
+# MCMC diagnostics
+summary(fit_dpsource2R_participant)$summary[,"Rhat"]
+
+stan_ac(fit_dpsource2R_participant, pars = c("grand_mu", "grand_sigma", "lp__"))
+stan_ac(fit_dpsource2R_participant, pars = c("Omega_subj","sigma_alpha_subj", "alpha_subj"))
+
+rstan::traceplot(fit_dpsource2R_participant, pars = c("grand_mu", "grand_sigma", "lp__"))
+rstan::traceplot(fit_dpsource2R_participant, pars = c("Omega_subj", "sigma_alpha_subj","lp__"))
+rstan::traceplot(fit_dpsource2R_participant, pars = c("alpha_subj", "lp__"))
+
+
+# Bit more involved results 
+
+someResults <- function(Model){
+  post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
+                                         "alpha_subj","Omega_subj",
+                                         "mu_crits","sigma_crits",
+                                         "crit"))
+  mu_diff <- post$grand_mu[,1] - post$grand_mu[,2]
+  poolsigma<- sqrt(post$grand_sigma^2)
+  dsuba <- getCredI(mu_diff/poolsigma)
+  #sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
+  #cbias <- getCredI(sdtbias)
+  participant_effects <- apply(post$alpha_subj,2,getCredI)
+  
+  return(list(dsuba,participant_effects))
+}
+
+
+someResults(fit_dpsource2R_participant)
+
