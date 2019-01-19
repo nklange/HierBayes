@@ -25,15 +25,15 @@ cidrs18 <- cidrs18[cidrs18$ExclReason=="valid",]
 
 # for Recognition Memory ------------------------------
 
-cidrs18binnedfreq <- melt(cidrs18, id.vars = c("SubjID","Condition","Blue1Red2New0"), measure.vars = c("RecConf"))
-cidrs18binnedfreq2 <- dcast(cidrs18binnedfreq, Condition + SubjID + Blue1Red2New0 ~ value, length)
+cidrs18binnedfreq <- melt(cidrs18, id.vars = c("SubjID","Condition","StimType"), measure.vars = c("RecConf"))
+cidrs18binnedfreq2 <- dcast(cidrs18binnedfreq, Condition + SubjID + StimType ~ value, length)
 
 cidrs18Item<-cidrs18binnedfreq2[cidrs18binnedfreq2$Condition==1,]
 
 cidrs18Item_info <- list(
   numberParticipants = length(unique(cidrs18Item$SubjID)),
-  testData_signalitems = as.matrix(cidrs18Item[cidrs18Item$Blue1Red2New0!="0",as.character(1:6)]),
-  testData_noiseitems = as.matrix(cidrs18Item[cidrs18Item$Blue1Red2New0=="0",as.character(1:6)])
+  testData_signalitems = as.matrix(cidrs18Item[cidrs18Item$StimType=="1",as.character(1:6)]),
+  testData_noiseitems = as.matrix(cidrs18Item[cidrs18Item$StimType=="2",as.character(1:6)])
 )
 
 numberParticipants <- length(unique(cidrs18Item$SubjID))
@@ -42,8 +42,8 @@ cidrs18Context<-cidrs18binnedfreq2[cidrs18binnedfreq2$Condition==2,]
 
 cidrs18Context_info <- list(
   numberParticipants = length(unique(cidrs18Context$SubjID)),
-  testData_signalitems = as.matrix(cidrs18Context[cidrs18Context$Blue1Red2New0!="0",as.character(1:6)]),
-  testData_noiseitems = as.matrix(cidrs18Context[cidrs18Context$Blue1Red2New0=="0",as.character(1:6)])
+  testData_signalitems = as.matrix(cidrs18Context[cidrs18Context$StimType=="1",as.character(1:6)]),
+  testData_noiseitems = as.matrix(cidrs18Context[cidrs18Context$StimType=="2",as.character(1:6)])
 )
 
 numberParticipants <- length(unique(cidrs18Context$SubjID))

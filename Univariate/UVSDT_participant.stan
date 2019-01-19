@@ -41,20 +41,20 @@ parameters {
   real<lower=0> grand_sigma[2]; // -> for sigma_s, sigma_n
   
   // Assumption: no parent distribution for criteria
-  // Participant effects: as variance-covariance matrix across parameters
-  // participant effect includes correlations of participant effects across parameters
-  // Alternative: drop correlations of effect between parameters and introduce separate participant effects for signal and noise items (https://doi.org/10.1016/j.jmp.2010.08.007)
+  // random participant effects
+    // participant effect includes correlation of participant-specific deviations across the main deterministic parameters (Trippas et al)
+  // Alternative: drop  parceling out of correlations (https://doi.org/10.1016/j.jmp.2010.08.007)
   
   matrix[numberParameters,numberParticipants] alpha_t_subj; // prep for multiplication
   cholesky_factor_corr[numberParameters] Lower_Omega_subj; //for prior chol.corr correlation
-  vector<lower=0>[numberParameters] sigma_alpha_subj; //for participant effect (w/o corr)
+  vector<lower=0>[numberParameters] sigma_alpha_subj; //for prior sigma participant
   
   // Prep criteria prior parameters
-  ordered[3] mu_crits; //-> for participant-specific mu_crits for crit = 2,3,4, crit1 = 0, crit5 = 1
-  real<lower=0> sigma_crits[2]; // -> for participant-specific sigma_crits for crit2, crit4 with crit3 reasonably unvariable
+  ordered[3] mu_crits; //-> for participant-specific mu_crits for crit = 2,3,4, crit1 = 0, crit5 = 1, mudelta
+  real<lower=0> sigma_crits[2]; // -> for participant-specific sigma_crits for crit2, crit4 with crit3 reasonably unvariable, sigma_delta
   
   // Prep mid-criteria on unit scale, crit = 2,3,4
-  ordered[3] crit_un[numberParticipants];
+  ordered[3] crit_un[numberParticipants]; //delta_un
 
 } 
 
@@ -69,14 +69,14 @@ transformed parameters {
   
   // prep alpha
   matrix[numberParticipants,numberParameters] alpha_subj; 
-  // participant effect includes correlations of participan effect across parameters
+  // compose participant effect of correlation matrix and sigma
   alpha_subj  = (diag_pre_multiply(sigma_alpha_subj, Lower_Omega_subj) * alpha_t_subj)'; 
 
   
   for (j in 1:numberParticipants) {
     
     //Transform unit scale criteria
-    crit[j, 1] = Phi(crit_un[j,1]);
+    crit[j, 1] = Phi(crit_un[j,1]);//delta
     crit[j, 2] = Phi(crit_un[j,2]);
     crit[j, 3] = Phi(crit_un[j,3]);
 

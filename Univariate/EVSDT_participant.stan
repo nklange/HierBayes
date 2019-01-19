@@ -41,9 +41,9 @@ parameters {
   real<lower=0> grand_sigma; // -> for sigma_s and sigma_n
   
   // Assumption: no parent distribution for criteria
-  // Participant effects: as variance-covariance matrix across parameters
-  // participant effect includes correlations of participant effects across parameters
-  // Alternative: drop correlations of effect between parameters and introduce separate participant effects for signal and noise items (https://doi.org/10.1016/j.jmp.2010.08.007)
+  // random participant effects
+  // participant effect includes correlation of participant-specific deviations across the main deterministic parameters (Trippas et al)
+  // Alternative: drop  parceling out of correlations (https://doi.org/10.1016/j.jmp.2010.08.007)
   
   matrix[numberParameters,numberParticipants] alpha_t_subj; // prep for multiplication
   cholesky_factor_corr[numberParameters] Lower_Omega_subj; //for prior chol.corr correlation
@@ -69,7 +69,7 @@ transformed parameters {
   
   // prep alpha
   matrix[numberParticipants,numberParameters] alpha_subj; 
-  // participant effect includes correlations of participan effect across parameters
+    // compose participant effect of correlation matrix and sigma
   alpha_subj  = (diag_pre_multiply(sigma_alpha_subj, Lower_Omega_subj) * alpha_t_subj)'; 
 
   

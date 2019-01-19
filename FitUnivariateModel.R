@@ -84,7 +84,7 @@ rstan::traceplot(fit_uvsdt_participant, pars = c("Omega_subj", "sigma_alpha_subj
 rstan::traceplot(fit_uvsdt_participant, pars = c("alpha_subj", "lp__"))
 
 
-someResults <- function(Model){
+someResults <- function(Model,numberPara = 4){
   post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
                                          "alpha_subj","Omega_subj",
                                          "mu_crits","sigma_crits",
@@ -94,13 +94,20 @@ someResults <- function(Model){
   dsuba <- getCredI(mu_diff/poolsigma)
   sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
   cbias <- getCredI(sdtbias)
-  participant_effects <- apply(post$alpha_subj,2,getCredI)
+
+  participant_effects <- list()
+  for (i in 1:numberPara){
   
+    participant_effects[[i]]<-apply(post$alpha_subj[,,i],2,getCredI)
+  
+  }
+
   return(list(dsuba,cbias,participant_effects))
 }
 
 
-someResults(fit_uvsdt_participant)
+someResults(fit_uvsdt_participant,4)
+
 
 
 # Equal Variance -----------------------------------------------------
@@ -164,7 +171,7 @@ rstan::traceplot(fit_evsdt_participant, pars = c("alpha_subj", "lp__"))
 
 # Bit more involved results 
 
-someResults <- function(Model){
+someResults <- function(Model, numberPara = 3){
   post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
                                          "alpha_subj","Omega_subj",
                                          "mu_crits","sigma_crits",
@@ -174,7 +181,13 @@ someResults <- function(Model){
   dsuba <- getCredI(mu_diff/poolsigma)
   sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
   cbias <- getCredI(sdtbias)
-  participant_effects <- apply(post$alpha_subj,2,getCredI)
+  
+  participant_effects <- list()
+  for (i in 1:numberPara){
+    
+    participant_effects[[i]]<-apply(post$alpha_subj[,,i],2,getCredI)
+    
+  }
   
   return(list(dsuba,cbias,participant_effects))
 }
@@ -243,7 +256,7 @@ rstan::traceplot(fit_dpsource2R_participant, pars = c("alpha_subj", "lp__"))
 
 # Bit more involved results 
 
-someResults <- function(Model){
+someResults <- function(Model, numberPara = 5){
   post <- rstan::extract(Model, pars = c("grand_mu", "grand_sigma",
                                          "alpha_subj","Omega_subj",
                                          "mu_crits","sigma_crits",
@@ -251,13 +264,19 @@ someResults <- function(Model){
   mu_diff <- post$grand_mu[,1] - post$grand_mu[,2]
   poolsigma<- sqrt(post$grand_sigma^2)
   dsuba <- getCredI(mu_diff/poolsigma)
-  #sdtbias <- (post$grand_mu[,1] + post$grand_mu[,2])/2 #look up c_adj
-  #cbias <- getCredI(sdtbias)
-  participant_effects <- apply(post$alpha_subj,2,getCredI)
+  
+  participant_effects <- list()
+  for (i in 1:numberPara){
+    
+    participant_effects[[i]]<-apply(post$alpha_subj[,,i],2,getCredI)
+    
+  }
   
   return(list(dsuba,participant_effects))
 }
 
 
 someResults(fit_dpsource2R_participant)
+
+
 
