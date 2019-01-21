@@ -34,7 +34,7 @@ getCredI <- function(x, interval = 0.95) {
 
 parameters <- c("theta_signalitems", "theta_noiseitems",
                 "grand_mu", "grand_sigma",
-                "dprime","bias","sigma_ratio",
+                "dprime","bias","sigma_ratio","dprime_std",
                 "crit", "mu_crits", "sigma_crits",
                 "Omega_subj", "sigma_alpha_subj","alpha_subj",
                 "lp__")
@@ -44,7 +44,7 @@ initsplease <- function(numberPara = 4) {
     grand_mu=sort(rnorm(2, 0.5), decreasing = TRUE),  
     grand_sigma = runif(2, 1, 2),
     mu_crits = sort(rnorm(3)), sigma_crits = runif(2),
-    crit_subj = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
+    crit_un = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
     Lower_Omega_subj=diag(numberPara ), 
     sigma_alpha_subj = runif(numberPara ), 
     alpha_t_subj=matrix(rnorm(numberParticipants * numberPara , 0, 0.1), 
@@ -61,7 +61,7 @@ fit_uvsdt_participant <- stan(file = "Univariate/UVSDT_participant.stan",
                               init=initsplease,
                               pars=parameters,
                               iter=4000, 
-                              chains=6, 
+                              chains=4, 
                               thin=3,
                               warmup = 1000
 )
@@ -70,7 +70,7 @@ save(fit_uvsdt_participant, file = "cidrs18Context_uvsdt_participant.Rda", compr
 
 
 # Quick results
-print(fit_uvsdt_participant, pars = c("dprime","bias","sigma_ratio"))
+print(fit_uvsdt_participant, pars = c("dprime","bias","sigma_ratio","dprime_std"))
 print(fit_uvsdt_participant, pars = c("grand_mu", "grand_sigma", "lp__"), include = TRUE)
 
 # MCMC diagnostics
@@ -126,7 +126,7 @@ initsplease <- function(numberPara = 3) {
     grand_mu=sort(rnorm(2, 0.5), decreasing = TRUE),  
     grand_sigma = runif(1, 1, 2),
     mu_crits = sort(rnorm(3)), sigma_crits = runif(2),
-    crit_subj = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
+    crit_un = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
     Lower_Omega_subj=diag(numberPara ), 
     sigma_alpha_subj = runif(numberPara ), 
     alpha_t_subj=matrix(rnorm(numberParticipants * numberPara , 0, 0.1), 
@@ -214,7 +214,7 @@ initsplease <- function(numberPara = 5) {
     grand_sigma = runif(1, 1, 2),
     grand_R = runif(2, 0, 1),
     mu_crits = sort(rnorm(3)), sigma_crits = runif(2),
-    crit_subj = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
+    crit_un = t(sapply(1:numberParticipants, function(x) sort(rnorm(3)))),
     Lower_Omega_subj=diag(numberPara ), 
     sigma_alpha_subj = runif(numberPara ), 
     alpha_t_subj=matrix(rnorm(numberParticipants * numberPara , 0, 0.1), 
