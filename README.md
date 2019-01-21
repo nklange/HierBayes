@@ -6,7 +6,7 @@
 ## Univariate
 ### [UVSDT_participant](Univariate/UVSDT_participant.stan)
 
-Univariate Signal/Noise UV SDT with participant effects, mostly cauchy priors
+Univariate Signal/Noise UV SDT with participant effects, reasonably uninformative priors
 
 ### [EVSDT_participant](Univariate/EVSDT_participant.stan)
 
@@ -16,8 +16,11 @@ Equal variance version of above, assuming 1 participant specific sigma for signa
 
 Specific version of Yonelinas dual-process model -> for source memory, recollection for signal and noise items (Source A v Source B), and Rs and Rn estimated separately for signal and noise items (written for unitization literature exploration, Diana et al, 2008)), participant effects
 
-## To Do:
+## To Play with:
 
-* item effects, especially for unitization, probably less of an issue for standard word list
-* bivariate recognition/source
-* multivariate recognition/source/priming (cidrs task) -- maybe start with the non-hierarchical version here
+* item effects, especially for unitization, probably less of an issue for standard word list but since the data is there probably good to explore full model
+* parameterize as theta_s = theta_n + theta_d' and estimate d' and alpha' instead [https://doi.org/10.1037/a0028144](https://doi.org/10.1037/a0028144)
+* Potentially not that trivial re: working around the lack of multi_normal_cdf:
+	* bivariate recognition/source
+	* multivariate recognition/source/priming (cidrs task) -- maybe start with the non-hierarchical version here
+		* bivariate Priming-Recognition or Priming-Source should work more easily out of the box
