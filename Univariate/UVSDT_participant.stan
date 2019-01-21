@@ -60,7 +60,7 @@ parameters {
 
 transformed parameters {
   
-  // Apply simplex algoritm to predicted data
+  // ensure sum to 1 of probabilities
   simplex[k] theta_signalitems[numberParticipants];
   simplex[k] theta_noiseitems[numberParticipants];
 
@@ -80,7 +80,7 @@ transformed parameters {
     crit[j, 2] = Phi(crit_un[j,2]);
     crit[j, 3] = Phi(crit_un[j,3]);
 
-    // add individual displacement to group level parameters:
+    // predict data with grand mu/sigma and participant effects on both
     theta_signalitems[j] = predictData(
         grand_mu[1] + alpha_subj[j,1], 
         exp(log(grand_sigma[1]) + alpha_subj[j,2]), 
@@ -98,13 +98,13 @@ transformed parameters {
 model {
   // Set the priors for hyperparameters
   // grand mu and sigma
-  to_vector(grand_mu) ~ cauchy(0.5, 4); 
-  to_vector(grand_sigma) ~  cauchy(1, 10);
+  to_vector(grand_mu) ~ normal(0, 10); 
+  to_vector(grand_sigma) ~  inv_gamma(2, 1);
   
   // participant effects
   Lower_Omega_subj ~ lkj_corr_cholesky(1); 
   to_vector(alpha_t_subj) ~ normal(0, 1); 
-  sigma_alpha_subj ~ cauchy(0, 4);
+  sigma_alpha_subj ~ inv_gamma(2, 1);
 
   // criteria
   mu_crits ~ normal(0, 1); //(2,3,4) # normals transform into flat uniform in uniform space
@@ -117,7 +117,7 @@ model {
   }
  
   
-  // Observed counts (binned freq rather than trial-by-trial basis)
+  // Observed data (binned freq rather than trial-by-trial basis)
    for (j in 1:numberParticipants) {
     testData_signalitems[j,1:k] ~ multinomial(theta_signalitems[j]); 
     testData_noiseitems[j,1:k] ~ multinomial(theta_noiseitems[j]);
@@ -129,15 +129,22 @@ generated quantities {
   real dprime;
   real bias;
   real sigma_ratio;
+  real dprime_std;
   // ^ if these are init'ed lower down, they throw parsing errors
   
-  // correlations of participant effects between parameters: LL'
+  // correlations of participant effects between parameters
   Omega_subj = multiply_lower_tri_self_transpose(Lower_Omega_subj);
   
-  // generic output
+  // generic output/group level
   dprime = grand_mu[1] - grand_mu[2];
   bias = (grand_mu[1] + grand_mu[2])/2;
   sigma_ratio = grand_sigma[1]/grand_sigma[2];
+  
+  // generic outputincl participant effects
+  
+  for (i in 1:numberParticipants){
+    dprime_std = grand_mu[1] + alpha_subj[i,1] - grand_mu[2] + alpha_subj[i,3];
+  }
   
 
 }
